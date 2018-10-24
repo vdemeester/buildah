@@ -346,6 +346,16 @@ var ErrNoFROM = fmt.Errorf("no FROM statement found")
 // set.
 func (b *Builder) From(node *parser.Node) (string, error) {
 	children := SplitChildren(node, command.From)
+	args := SplitChildren(node, command.Arg)
+	for _, c := range args {
+		step := b.Step()
+		if err := step.Resolve(c); err != nil {
+			return "", err
+		}
+		if err := b.Run(step, NoopExecutor, false); err != nil {
+			return "", err
+		}
+	}
 	switch {
 	case len(children) == 0:
 		return "", ErrNoFROM

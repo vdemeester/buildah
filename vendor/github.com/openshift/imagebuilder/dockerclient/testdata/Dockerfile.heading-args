@@ -1,0 +1,5 @@
+ARG BAR
+FROM busybox:$BAR
+
+#ARG BAR
+#FROM busybox:$BAR
