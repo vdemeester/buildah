@@ -71,7 +71,28 @@ func TestMultiStageParse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	stages := NewStages(n, NewBuilder(nil))
+	stages, err := NewStages(n, NewBuilder(nil))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(stages) != 3 {
+		t.Fatalf("expected 3 stages, got %d", len(stages))
+	}
+	t.Logf("stages: %#v", stages)
+}
+
+func TestMultiStageParseHeadingArg(t *testing.T) {
+	n, err := ParseFile("dockerclient/testdata/multistage/Dockerfile.heading-arg")
+	if err != nil {
+		t.Fatal(err)
+	}
+	stages, err := NewStages(n, NewBuilder(nil))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(stages) != 3 {
+		t.Fatalf("expected 3 stages, got %d", len(stages))
+	}
 	t.Logf("stages: %#v", stages)
 }
 

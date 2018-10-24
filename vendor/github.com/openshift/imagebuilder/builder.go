@@ -172,8 +172,18 @@ type Stage struct {
 	Node     *parser.Node
 }
 
-func NewStages(node *parser.Node, b *Builder) Stages {
+func NewStages(node *parser.Node, b *Builder) (Stages, error) {
 	var stages Stages
+	args := SplitChildren(node, command.Arg)
+	for _, c := range args {
+		step := b.Step()
+		if err := step.Resolve(c); err != nil {
+			return stages, err
+		}
+		if err := b.Run(step, NoopExecutor, false); err != nil {
+			return stages, err
+		}
+	}
 	for i, root := range SplitBy(node, command.From) {
 		name, _ := extractNameFromNode(root.Children[0])
 		if len(name) == 0 {
@@ -189,7 +199,7 @@ func NewStages(node *parser.Node, b *Builder) Stages {
 			Node: root,
 		})
 	}
-	return stages
+	return stages, nil
 }
 
 func extractNameFromNode(node *parser.Node) (string, bool) {
