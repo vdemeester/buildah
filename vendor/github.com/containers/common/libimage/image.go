@@ -329,17 +329,19 @@ func (i *Image) remove(ctx context.Context, rmMap map[string]*RemoveImageReport,
 	// an `rmi foo` will not untag "foo" but instead attempt to remove the
 	// entire image.  If there's a container using "foo", we should get an
 	// error.
-	if options.Force || referencedBy == "" || numNames == 1 {
+	if referencedBy == "" || numNames == 1 {
 		// DO NOTHING, the image will be removed
 	} else {
 		byID := strings.HasPrefix(i.ID(), referencedBy)
 		byDigest := strings.HasPrefix(referencedBy, "sha256:")
-		if byID && numNames > 1 {
-			return errors.Errorf("unable to delete image %q by ID with more than one tag (%s): please force removal", i.ID(), i.Names())
-		} else if byDigest && numNames > 1 {
-			// FIXME - Docker will remove the digest but containers storage
-			// does not support that yet, so our hands are tied.
-			return errors.Errorf("unable to delete image %q by digest with more than one tag (%s): please force removal", i.ID(), i.Names())
+		if !options.Force {
+			if byID && numNames > 1 {
+				return errors.Errorf("unable to delete image %q by ID with more than one tag (%s): please force removal", i.ID(), i.Names())
+			} else if byDigest && numNames > 1 {
+				// FIXME - Docker will remove the digest but containers storage
+				// does not support that yet, so our hands are tied.
+				return errors.Errorf("unable to delete image %q by digest with more than one tag (%s): please force removal", i.ID(), i.Names())
+			}
 		}
 
 		// Only try to untag if we know it's not an ID or digest.
@@ -656,25 +658,6 @@ func (i *Image) Unmount(force bool) error {
 	logrus.Debugf("Unmounted image %s", i.ID())
 	_, err := i.runtime.store.UnmountImage(i.ID(), force)
 	return err
-}
-
-// MountPoint returns the fully-evaluated mount point of the image.  If the
-// image isn't mounted, an empty string is returned.
-func (i *Image) MountPoint() (string, error) {
-	counter, err := i.runtime.store.Mounted(i.TopLayer())
-	if err != nil {
-		return "", err
-	}
-
-	if counter == 0 {
-		return "", nil
-	}
-
-	layer, err := i.runtime.store.Layer(i.TopLayer())
-	if err != nil {
-		return "", err
-	}
-	return filepath.EvalSymlinks(layer.MountPoint)
 }
 
 // Size computes the size of the image layers and associated data.
